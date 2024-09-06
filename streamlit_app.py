@@ -1,34 +1,6 @@
 import streamlit as st
 import psycopg2
 
-# Función para inicializar la conexión a ala base de datos
-def initialize_connection():
-    try:
-        st.write("Initializing connection...")
-        conn = st.connection("postgresql", type="sql")
-        st.success("Connection successfully established!")
-        return conn
-    except Exception as e:
-        st.error(f"An error occurred while initializing the connection: {e}")
-        return None
-
-# Función para realizar una consulta
-def execute_query(query, conn):
-    try:
-        df = conn.query(query, ttl="10m")
-        st.dataframe(df)
-    except Exception as e:
-        st.error(f"An error occurred while executing the query: {e}")
-
-# Función para realizar múltiples consultas
-def get_elements():
-    # Inicializa la conexión
-    conn = initialize_connection()    
-    if conn is not None:
-            # Consulta 1
-            query1 = 'SELECT * FROM mytable;'
-            execute_query(query1, conn)
-
 # Esta conexión se utiliza para consultas más especializadas
 def get_connection():
     conn = psycopg2.connect(
@@ -40,8 +12,8 @@ def get_connection():
     return conn
 
 # Esta función renderiza el formulario y tiene la lógica para insertar elementos
-def insert_element():    
-# Botón para insertar datos
+def insert_element():
+    # Botón para insertar datos
     name = st.text_input("Nombre")
     pet = st.text_input("Mascota")
     if st.button("Insertar registro"):
@@ -67,11 +39,36 @@ def insert_element():
         else:
             st.warning("Por favor, completa todos los campos")
 
-# función inical, se encarga de orquestar la app indicando que metodos se deben renderizar desde el inicio
+# Esta función se encarga de listar los registros de la tabla 'mytable'
+def list_elements():
+    if st.button("Listar registros"):
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            # Realiza la consulta para obtener todos los registros
+            select_query = "SELECT * FROM mytable"
+            cursor.execute(select_query)
+            registros = cursor.fetchall()
+            # Muestra los registros
+            if registros:
+                for registro in registros:
+                    st.write(f"Nombre: {registro[0]}, Mascota: {registro[1]}")
+            else:
+                st.write("No se encontraron registros.")
+
+        except Exception as e:
+            st.error(f"Ocurrió un error al listar los registros: {e}")
+        finally:
+            cursor.close()
+            conn.close()
+
+# Función inicial, se encarga de orquestar la app indicando qué métodos se deben renderizar
 def init_app():
-    insert_element()
-    get_elements()
-    
+    insert_element()  # Formulario para insertar elementos
+    st.write("---")
+    list_elements()  # Funcionalidad para listar los registros
+
 # Ejecuta las consultas cuando se inicia la aplicación
 if __name__ == "__main__":
     st.title("🎈 My new app")
@@ -79,4 +76,3 @@ if __name__ == "__main__":
         "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
     )
     init_app()
-
